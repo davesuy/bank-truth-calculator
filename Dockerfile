@@ -56,6 +56,7 @@ COPY docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 # Set environment defaults for SQLite
 ENV DB_CONNECTION=sqlite
 ENV DB_DATABASE=/var/www/html/database/database.sqlite
+ENV ASSET_URL=https://bank-truth-calculator.onrender.com
 
 # Expose port
 EXPOSE 8080

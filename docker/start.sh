@@ -7,6 +7,9 @@ echo "Starting application..."
 export DB_CONNECTION=sqlite
 export DB_DATABASE=/var/www/html/database/database.sqlite
 
+# Force HTTPS URLs for Render deployment
+export APP_FORCE_HTTPS=true
+
 # Ensure database file exists
 if [ ! -f /var/www/html/database/database.sqlite ]; then
     echo "Creating SQLite database..."
