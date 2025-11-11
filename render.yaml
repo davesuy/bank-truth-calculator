@@ -1,3 +1,4 @@
+        value: "true"
 services:
   - type: web
     name: bank-truth-calculator
@@ -15,7 +16,9 @@ services:
       - key: APP_KEY
         value: base64:2azluL8LXJhWal35l/a74fyIvdHsMsXBwRMnjLIEzqw=
       - key: APP_DEBUG
-        value: "false"
+        value: "true"
+      - key: APP_URL
+        value: https://bank-truth-calculator-1.onrender.com
       - key: LOG_CHANNEL
         value: stderr
       - key: DB_CONNECTION
