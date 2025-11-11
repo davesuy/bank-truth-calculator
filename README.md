@@ -6,6 +6,8 @@ A Laravel-based web application that helps users calculate and compare the real 
 
 **Screen Recording:** https://www.loom.com/share/4ffaa0bf139d47cb942c5ba465941680
 
+> **⚠️ First Load Note:** The app is on Render's free tier. Please allow 50-60 seconds for the initial page load as the server wakes up from sleep. Subsequent visits will be instant.
+
 > **Note:** The current calculator implementation demonstrates technical capabilities in full-stack development. The calculation logic shown is not the final implementation but serves to showcase abilities in building this type of feature.
 
 ## Features
