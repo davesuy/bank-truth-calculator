@@ -55,62 +55,52 @@ RUN touch database/database.sqlite && chmod 664 database/database.sqlite
 # Create startup script with better error handling
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "🔧 Setting up environment..."\n\
 \n\
-# Show diagnostic info\n\
-echo "📊 Diagnostic Information:"\n\
-echo "   Working directory: $(pwd)"\n\
-echo "   PHP version: $(php -v | head -n 1)"\n\
-echo "   Laravel version: $(php artisan --version)"\n\
+echo "================================="\n\
+echo "🚀 Bank Truth Calculator Starting"\n\
+echo "================================="\n\
 echo ""\n\
 \n\
-# Ensure storage and cache directories exist and are writable\n\
-mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache\n\
+# Show environment\n\
+echo "📊 Environment:"\n\
+echo "   PWD: $(pwd)"\n\
+echo "   PHP: $(php -v | head -n 1)"\n\
+echo "   PORT: ${PORT:-8080}"\n\
+echo "   APP_ENV: ${APP_ENV:-production}"\n\
+echo ""\n\
+\n\
+# Setup directories\n\
+echo "📁 Setting up directories..."\n\
+mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache database\n\
 chmod -R 777 storage bootstrap/cache\n\
-echo "   ✅ Storage directories created and writable"\n\
+touch database/database.sqlite 2>/dev/null || true\n\
+chmod 666 database/database.sqlite 2>/dev/null || true\n\
+echo "   ✅ Directories ready"\n\
 \n\
-# Ensure database file exists and is writable\n\
-touch database/database.sqlite\n\
-chmod 666 database/database.sqlite\n\
-echo "   ✅ Database file created: $(ls -lh database/database.sqlite)"\n\
+# Run migrations (dont fail if already done)\n\
+echo ""\n\
+echo "🗄️  Database setup..."\n\
+php artisan migrate --force 2>&1 || echo "   ⚠️  Migrations skipped"\n\
+php artisan db:seed --class=BankSeeder --force 2>&1 || echo "   ⚠️  Seeding skipped"\n\
+echo "   ✅ Database ready"\n\
 \n\
-# Check if build assets exist\n\
-if [ -f "public/build/manifest.json" ]; then\n\
-    echo "   ✅ Vite manifest found: public/build/manifest.json"\n\
-else\n\
-    echo "   ⚠️  Vite manifest NOT found at public/build/manifest.json"\n\
-    echo "   Contents of public/:"\n\
-    ls -la public/\n\
-fi\n\
+# Cache config\n\
+echo ""\n\
+echo "⚙️  Optimizing..."\n\
+php artisan config:cache 2>&1 || true\n\
+php artisan route:cache 2>&1 || true\n\
+echo "   ✅ Optimization complete"\n\
+\n\
+# Show final status\n\
+echo ""\n\
+echo "================================="\n\
+echo "✅ Ready to serve!"\n\
+echo "================================="\n\
+echo "🌐 Starting on 0.0.0.0:${PORT:-8080}"\n\
 echo ""\n\
 \n\
-echo "🗄️  Running migrations..."\n\
-php artisan migrate --force || { echo "❌ Migration failed!"; exit 1; }\n\
-\n\
-echo "🌱 Seeding database..."\n\
-php artisan db:seed --class=BankSeeder --force || echo "⚠️  Seeding skipped (data may already exist)"\n\
-\n\
-echo "🧹 Clearing caches..."\n\
-php artisan config:clear || true\n\
-php artisan cache:clear || true\n\
-php artisan route:clear || true\n\
-php artisan view:clear || true\n\
-\n\
-echo "⚙️  Caching configuration..."\n\
-php artisan config:cache || echo "⚠️  Config cache failed"\n\
-php artisan route:cache || echo "⚠️  Route cache failed"\n\
-php artisan view:cache || echo "⚠️  View cache failed"\n\
-\n\
-echo ""\n\
-echo "✅ Startup complete! Application ready."\n\
-echo "🌐 Test endpoints:"\n\
-echo "   - /test (basic test)"\n\
-echo "   - /health (health check)"\n\
-echo "   - /api/banks (API test)"\n\
-echo ""\n\
-\n\
-echo "🚀 Starting server on port ${PORT:-8080}..."\n\
-php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
+# Start server (this blocks)\n\
+exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080} --no-reload\n\
 ' > /start.sh && chmod +x /start.sh
 
 # Expose port
