@@ -4,9 +4,29 @@ set -o errexit
 
 echo "🏗️  Building Bank Truth Calculator for Render..."
 
+# Check if composer exists, if not, install it
+if ! command -v composer &> /dev/null; then
+    echo "🔧 Installing Composer..."
+    EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+
+    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+        >&2 echo 'ERROR: Invalid composer installer checksum'
+        rm composer-setup.php
+        exit 1
+    fi
+
+    php composer-setup.php --quiet
+    rm composer-setup.php
+    COMPOSER_CMD="php composer.phar"
+else
+    COMPOSER_CMD="composer"
+fi
+
 # Install PHP dependencies
 echo "📦 Installing PHP dependencies..."
-composer install --no-dev --optimize-autoloader --no-interaction
+$COMPOSER_CMD install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node dependencies and build assets
 echo "📦 Installing Node dependencies..."

@@ -1,12 +1,13 @@
 services:
   - type: web
     name: bank-truth-calculator
-    runtime: docker
+    runtime: php
     repo: https://github.com/davesuy/bank-truth-calculator
     region: oregon
     plan: free
     branch: main
-    dockerfilePath: ./Dockerfile
+    buildCommand: ./build.sh
+    startCommand: php -S 0.0.0.0:$PORT -t public
     envVars:
       - key: APP_NAME
         value: Bank Truth Calculator
@@ -15,13 +16,13 @@ services:
       - key: APP_KEY
         value: base64:2azluL8LXJhWal35l/a74fyIvdHsMsXBwRMnjLIEzqw=
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: LOG_CHANNEL
         value: stderr
       - key: DB_CONNECTION
         value: sqlite
       - key: DB_DATABASE
-        value: /var/www/html/database/database.sqlite
+        value: /opt/render/project/src/database/database.sqlite
       - key: SESSION_DRIVER
         value: file
       - key: CACHE_DRIVER
