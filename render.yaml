@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: bank-truth-calculator
+    runtime: php
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "php -S 0.0.0.0:$PORT -t public public/index.php"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /opt/render/project/src/database/database.sqlite
+
+databases:
+  # Uncomment below if you want to use PostgreSQL instead of SQLite
+  # - name: bank-truth-db
+  #   databaseName: bank_truth
+  #   user: bank_truth_user
+
