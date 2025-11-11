@@ -1,54 +1,131 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 💰 Bank Truth Calculator
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based web application that helps users calculate and compare the real cost of keeping money in low-interest savings accounts versus high-yield alternatives.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- 💵 **Interactive Savings Calculator** - Calculate opportunity cost over time
+- 🏦 **Bank Comparison Tool** - Compare sponsored high-yield accounts vs traditional banks
+- 📊 **Real-time Calculations** - See how much money you're losing monthly/yearly
+- 🎯 **Monthly Contribution Support** - Factor in regular deposits
+- 📱 **Responsive Design** - Works on desktop and mobile
+- ⚡ **Fast & Modern** - Built with Laravel 11 + Vue 3 + Vite
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 11, PHP 8.2
+- **Frontend**: Vue 3, Vite
+- **Database**: SQLite
+- **Styling**: Tailwind CSS (coming soon)
+- **Deployment**: Render (Docker)
 
-## Learning Laravel
+## API Endpoints
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- `GET /api/banks` - Get all banks
+- `GET /api/banks/sponsored` - Get high-yield sponsored banks
+- `GET /api/banks/low-rate` - Get traditional low-rate banks
+- `POST /api/banks/compare` - Compare savings calculations
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local Development
 
-## Laravel Sponsors
+### Prerequisites
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- npm
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Installation
 
-### Premium Partners
+```bash
+# Clone repository
+git clone https://github.com/davesuy/bank-truth-calculator.git
+cd bank-truth-calculator
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Install PHP dependencies
+composer install
 
-## Contributing
+# Install Node dependencies
+npm install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Copy environment file
+cp .env.example .env
 
-## Code of Conduct
+# Generate application key
+php artisan key:generate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Create database and run migrations
+touch database/database.sqlite
+php artisan migrate
+
+# Seed with bank data
+php artisan db:seed --class=BankSeeder
+
+# Build frontend assets
+npm run build
+
+# Start development server
+php artisan serve
+```
+
+Visit: http://localhost:8000/calculator
+
+## Deployment
+
+### Deploy to Render
+
+This project is configured for one-click deployment to Render using Docker.
+
+⚠️ **Important**: See [⚠️_READ_THIS_FIRST_⚠️.md](⚠️_READ_THIS_FIRST_⚠️.md) for deployment instructions.
+
+**Quick summary:**
+1. Create new Web Service on Render
+2. Connect this repository
+3. **Choose "Blueprint"** option (it will read `render.yaml`)
+4. Or manually set **Environment** to "Docker"
+5. Deploy!
+
+The application will automatically:
+- Build with Docker
+- Install dependencies
+- Run migrations
+- Seed database
+- Start the server
+
+## Project Structure
+
+```
+├── app/
+│   ├── Http/Controllers/
+│   │   └── BankController.php    # API endpoints
+│   └── Models/
+│       └── Bank.php               # Bank model
+├── database/
+│   ├── migrations/                # Database schema
+│   └── seeders/
+│       └── BankSeeder.php         # Sample bank data
+├── resources/
+│   ├── js/
+│   │   └── components/
+│   │       └── BankCalculator.vue # Main calculator component
+│   └── views/
+│       └── calculator.blade.php   # Calculator page
+├── routes/
+│   └── web.php                    # Routes
+├── Dockerfile                     # Docker configuration
+└── render.yaml                    # Render deployment config
+```
+
+## Additional Documentation
+
+- [⚠️_READ_THIS_FIRST_⚠️.md](⚠️_READ_THIS_FIRST_⚠️.md) - Render deployment guide
+- [MONTHLY_CONTRIBUTION_FEATURE.md](MONTHLY_CONTRIBUTION_FEATURE.md) - Monthly contributions feature
+- [VUE3_SETUP.md](VUE3_SETUP.md) - Vue 3 setup guide
+- [VUE3_TROUBLESHOOTING.md](VUE3_TROUBLESHOOTING.md) - Vue troubleshooting
+- [XML_API_INTEGRATION.md](XML_API_INTEGRATION.md) - External API integration
+
+## License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
 ## Security Vulnerabilities
 
