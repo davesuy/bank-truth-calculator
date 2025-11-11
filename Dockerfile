@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Install system dependencies
+# Install system dependencies including SQLite
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -10,13 +10,13 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     nodejs \
-    npm
+    npm \
+    sqlite3 \
+    libsqlite3-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Install PHP extensions including pdo_sqlite
+RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -24,27 +24,28 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci --prefer-offline --no-audit
+
+# Copy all application files
 COPY . /var/www/html
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Run composer dump-autoload now that all files are present
+RUN composer dump-autoload --optimize
 
-# Install Node dependencies and build assets
-RUN npm ci --prefer-offline --no-audit
+# Build frontend assets
 RUN npm run build
 
-# Laravel setup
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
-
 # Create SQLite database
-RUN touch database/database.sqlite
-RUN chmod 664 database/database.sqlite
+RUN mkdir -p database && touch database/database.sqlite && chmod 664 database/database.sqlite
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Configure Apache
@@ -54,7 +55,8 @@ COPY docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 # Expose port
 EXPOSE 8080
 
-# Start Apache
-CMD php artisan migrate --force && \
-    php artisan db:seed --force && \
-    apache2-foreground
+# Copy and use start script
+COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+CMD ["/usr/local/bin/start.sh"]
