@@ -2,6 +2,12 @@
 
 A Laravel-based web application that helps users calculate and compare the real cost of keeping money in low-interest savings accounts versus high-yield alternatives.
 
+**Live Demo:** https://bank-truth-calculator.onrender.com/
+
+**Screen Recording:** https://www.loom.com/share/4ffaa0bf139d47cb942c5ba465941680
+
+> **Note:** The current calculator implementation demonstrates technical capabilities in full-stack development. The calculation logic shown is not the final implementation but serves to showcase abilities in building this type of feature.
+
 ## Features
 
 - 💵 **Interactive Savings Calculator** - Calculate opportunity cost over time
@@ -9,15 +15,16 @@ A Laravel-based web application that helps users calculate and compare the real 
 - 📊 **Real-time Calculations** - See how much money you're losing monthly/yearly
 - 🎯 **Monthly Contribution Support** - Factor in regular deposits
 - 📱 **Responsive Design** - Works on desktop and mobile
-- ⚡ **Fast & Modern** - Built with Laravel 11 + Vue 3 + Vite
+- ⚡ **Fast & Modern** - Built with Laravel 12 + Vue 3 + Vite
 
 ## Tech Stack
 
-- **Backend**: Laravel 11, PHP 8.2
+- **Backend**: Laravel 12.0, PHP 8.2
 - **Frontend**: Vue 3, Vite
 - **Database**: SQLite
-- **Styling**: Tailwind CSS (coming soon)
+- **Server**: Apache (via Docker)
 - **Deployment**: Render (Docker)
+- **Version Control**: Git/GitHub
 
 ## API Endpoints
 
@@ -53,12 +60,11 @@ cp .env.example .env
 # Generate application key
 php artisan key:generate
 
-# Create database and run migrations
+# Create database
 touch database/database.sqlite
-php artisan migrate
 
-# Seed with bank data
-php artisan db:seed --class=BankSeeder
+# Run migrations and seed
+php artisan migrate --seed
 
 # Build frontend assets
 npm run build
@@ -67,70 +73,111 @@ npm run build
 php artisan serve
 ```
 
-Visit: http://localhost:8000/calculator
+Visit: http://localhost:8000
 
 ## Deployment
 
 ### Deploy to Render
 
-This project is configured for one-click deployment to Render using Docker.
+This project is configured for automatic deployment to Render using Docker.
 
-⚠️ **Important**: See [⚠️_READ_THIS_FIRST_⚠️.md](⚠️_READ_THIS_FIRST_⚠️.md) for deployment instructions.
+#### Quick Deploy Steps:
 
-**Quick summary:**
-1. Create new Web Service on Render
-2. Connect this repository
-3. **Choose "Blueprint"** option (it will read `render.yaml`)
-4. Or manually set **Environment** to "Docker"
-5. Deploy!
+1. **Push to GitHub**
+   ```bash
+   git push origin main
+   ```
 
-The application will automatically:
-- Build with Docker
-- Install dependencies
-- Run migrations
-- Seed database
-- Start the server
+2. **Create Web Service on Render**
+   - Go to https://render.com
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   - Render will auto-detect `render.yaml`
+
+3. **Set Environment Variables**
+   - `APP_KEY` - Generate with: `php artisan key:generate --show`
+   - `APP_URL` - Your Render URL (e.g., https://your-app.onrender.com)
+   - `ASSET_URL` - Same as APP_URL (for HTTPS assets)
+
+4. **Deploy**
+   - Click "Create Web Service"
+   - Wait 5-8 minutes for initial build
+   - App will be live!
+
+#### What Happens During Deployment:
+
+The Docker container automatically:
+- ✅ Installs all PHP and Node dependencies
+- ✅ Builds frontend assets with Vite
+- ✅ Runs database migrations
+- ✅ Seeds bank data
+- ✅ Configures Apache web server
+- ✅ Starts the application
 
 ## Project Structure
 
 ```
 ├── app/
 │   ├── Http/Controllers/
-│   │   └── BankController.php    # API endpoints
-│   └── Models/
-│       └── Bank.php               # Bank model
+│   │   └── BankController.php        # API endpoints
+│   ├── Models/
+│   │   └── Bank.php                  # Bank model
+│   └── Providers/
+│       └── AppServiceProvider.php    # HTTPS URL forcing
 ├── database/
-│   ├── migrations/                # Database schema
+│   ├── migrations/
+│   │   └── create_banks_table.php    # Banks table schema
 │   └── seeders/
-│       └── BankSeeder.php         # Sample bank data
+│       ├── DatabaseSeeder.php        # Main seeder
+│       └── BankSeeder.php            # Bank data (9 banks)
 ├── resources/
 │   ├── js/
+│   │   ├── app.js                    # Vue app initialization
 │   │   └── components/
-│   │       └── BankCalculator.vue # Main calculator component
+│   │       └── BankCalculator.vue    # Calculator component
 │   └── views/
-│       └── calculator.blade.php   # Calculator page
+│       └── calculator.blade.php      # Calculator page
 ├── routes/
-│   └── web.php                    # Routes
-├── Dockerfile                     # Docker configuration
-└── render.yaml                    # Render deployment config
+│   └── web.php                       # Web & API routes
+├── docker/
+│   ├── start.sh                      # Container startup script
+│   └── 000-default.conf              # Apache configuration
+├── Dockerfile                        # Docker build configuration
+├── render.yaml                       # Render deployment config
+└── vite.config.js                    # Vite bundler config
 ```
 
-## Additional Documentation
+## Development Features Demonstrated
 
-- [⚠️_READ_THIS_FIRST_⚠️.md](⚠️_READ_THIS_FIRST_⚠️.md) - Render deployment guide
-- [MONTHLY_CONTRIBUTION_FEATURE.md](MONTHLY_CONTRIBUTION_FEATURE.md) - Monthly contributions feature
-- [VUE3_SETUP.md](VUE3_SETUP.md) - Vue 3 setup guide
-- [VUE3_TROUBLESHOOTING.md](VUE3_TROUBLESHOOTING.md) - Vue troubleshooting
-- [XML_API_INTEGRATION.md](XML_API_INTEGRATION.md) - External API integration
+- ✅ RESTful API design
+- ✅ Vue 3 Composition API
+- ✅ Database migrations and seeding
+- ✅ Docker containerization
+- ✅ Cloud deployment (Render)
+- ✅ HTTPS enforcement
+- ✅ Asset compilation with Vite
+- ✅ Git version control
+- ✅ Environment configuration
+
+## Bank Data
+
+The application includes seeded data for:
+- **4 Sponsored Banks** - High-yield savings accounts (4.75% - 5.25% APY)
+- **5 Low-Rate Banks** - Traditional big banks (0.01% - 0.25% APY)
+
+Data can be managed through the API or database seeders.
+
+## Contributing
+
+This is a demonstration project showcasing full-stack development capabilities.
 
 ## License
 
 This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Built by:** Dave Ramirez  
+**Repository:** https://github.com/davesuy/bank-truth-calculator  
+**Live Demo:** https://bank-truth-calculator.onrender.com/  
+**Date:** November 2025
