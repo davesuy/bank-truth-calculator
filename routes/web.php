@@ -43,16 +43,34 @@ Route::get('/health', function () {
 
 Route::get('/', function () {
     try {
+        // Try to load calculator view with Vite assets
         return view('calculator');
     } catch (\Exception $e) {
-        // Fallback if view has issues
+        // If that fails, check if it's a Vite issue
+        if (str_contains($e->getMessage(), 'Vite') || str_contains($e->getMessage(), 'manifest')) {
+            // Show simple welcome page without Vite
+            return view('welcome-simple');
+        }
+
+        // For other errors, show detailed error info (debug mode)
         return response()->json([
             'error' => 'View error',
             'message' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
+            'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable debug mode to see trace',
         ], 500);
     }
+});
+
+// Simple welcome route (no Vite dependencies)
+Route::get('/welcome', function () {
+    return view('welcome-simple');
+});
+
+// Dedicated calculator route (tries to load Vue calculator)
+Route::get('/calculator', function () {
+    return view('calculator');
 });
 
 // API Routes
