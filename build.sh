@@ -3,10 +3,10 @@
 set -o errexit
 
 echo "Installing Composer dependencies..."
-composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs
 
 echo "Installing Node dependencies..."
-npm ci
+npm ci --prefer-offline --no-audit
 
 echo "Building frontend assets..."
 npm run build
@@ -28,7 +28,11 @@ php artisan view:cache
 if [ ! -f database/database.sqlite ]; then
     echo "Creating SQLite database..."
     touch database/database.sqlite
+    chmod 664 database/database.sqlite
 fi
+
+# Ensure storage and bootstrap/cache are writable
+chmod -R 775 storage bootstrap/cache
 
 # Run migrations
 echo "Running database migrations..."
