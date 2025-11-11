@@ -1,7 +1,7 @@
 services:
   - type: web
     name: bank-truth-calculator
-    env: php
+    runtime: php
     plan: free
     buildCommand: "./build.sh"
     startCommand: "heroku-php-apache2 public/"
@@ -9,7 +9,7 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: APP_KEY
         sync: false
       - key: APP_URL
@@ -27,9 +27,4 @@ services:
       - key: DB_DATABASE
         value: /opt/render/project/src/database/database.sqlite
 
-databases:
-  # Uncomment below if you want to use PostgreSQL instead of SQLite
-  # - name: bank-truth-db
-  #   databaseName: bank_truth
-  #   user: bank_truth_user
 

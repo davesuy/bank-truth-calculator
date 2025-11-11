@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Start PHP built-in server
-# The PORT environment variable is provided by Render
-exec /usr/local/bin/php -S 0.0.0.0:${PORT:-8000} -t public public/index.php
+# Start Apache server with Heroku PHP buildpack
+# This is called by Render when using env: php
+exec vendor/bin/heroku-php-apache2 public/
 
