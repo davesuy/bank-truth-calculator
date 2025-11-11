@@ -4,24 +4,40 @@ set -o errexit
 
 echo "🏗️  Building Bank Truth Calculator for Render..."
 
-# Check if composer exists, if not, install it
-if ! command -v composer &> /dev/null; then
-    echo "🔧 Installing Composer..."
-    EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-    ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+# Check if PHP is available
+if ! command -v php &> /dev/null; then
+    echo "⚠️  PHP not found. Checking if this is Render environment..."
 
-    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
-        >&2 echo 'ERROR: Invalid composer installer checksum'
-        rm composer-setup.php
+    # On Render with PHP runtime, composer should be pre-installed
+    if command -v composer &> /dev/null; then
+        echo "✅ Composer found, continuing with build..."
+        COMPOSER_CMD="composer"
+    else
+        echo "❌ Neither PHP nor Composer found. Cannot continue."
         exit 1
     fi
-
-    php composer-setup.php --quiet
-    rm composer-setup.php
-    COMPOSER_CMD="php composer.phar"
 else
-    COMPOSER_CMD="composer"
+    echo "✅ PHP found: $(php -v | head -n 1)"
+
+    # Check if composer exists, if not, install it
+    if ! command -v composer &> /dev/null; then
+        echo "🔧 Installing Composer..."
+        EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+        ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+
+        if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+            >&2 echo 'ERROR: Invalid composer installer checksum'
+            rm composer-setup.php
+            exit 1
+        fi
+
+        php composer-setup.php --quiet
+        rm composer-setup.php
+        COMPOSER_CMD="php composer.phar"
+    else
+        COMPOSER_CMD="composer"
+    fi
 fi
 
 # Install PHP dependencies

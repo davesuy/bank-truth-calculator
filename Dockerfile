@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -45,18 +45,26 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
 # Create SQLite database
 RUN touch database/database.sqlite && chmod 664 database/database.sqlite
 
-# Cache Laravel configuration
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+# Cache Laravel configuration (but not routes/views since they may fail without DB)
+RUN php artisan config:cache
 
-# Run migrations and seed database
-RUN php artisan migrate --force \
-    && php artisan db:seed --class=BankSeeder --force
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🗄️  Running migrations..."\n\
+php artisan migrate --force\n\
+echo "🌱 Seeding database..."\n\
+php artisan db:seed --class=BankSeeder --force || true\n\
+echo "⚙️  Caching routes and views..."\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+echo "🚀 Starting server on port ${PORT:-8080}..."\n\
+php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
+' > /start.sh && chmod +x /start.sh
 
 # Expose port
 EXPOSE 8080
 
 # Start Laravel server
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+CMD ["/start.sh"]
 
