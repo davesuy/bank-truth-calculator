@@ -1,6 +1,31 @@
-# 🔧 Fixing the 500 Error
+# 🔧 Fixing the 500 Error - Cache Table Issue
+
+## ✅ ISSUE IDENTIFIED & FIXED
+
+The error was:
+```
+SQLSTATE[HY000]: General error: 1 no such table: cache
+```
+
+### Root Cause
+The startup script was trying to clear the cache **BEFORE** running migrations. Since the cache table didn't exist yet, it failed.
 
 ## What I Fixed
+
+### Updated Startup Script Order:
+1. ✅ **Create database** and set permissions
+2. ✅ **Run migrations FIRST** (creates all tables including cache)
+3. ✅ Seed database
+4. ✅ **Then clear caches** (now the cache table exists)
+5. ✅ Cache configuration
+6. ✅ Start server
+
+### Additional Fixes:
+- ✅ Removed `config:cache` from Docker build (was using wrong environment variables)
+- ✅ All cache commands now fail gracefully with `|| true`
+- ✅ Configuration caching happens at runtime with correct env vars
+
+## What I Fixed Previously
 
 Your service deployed successfully but showed a **500 Internal Server Error** when visiting the URL. This is typically caused by:
 1. ❌ Storage/logs directories not writable
