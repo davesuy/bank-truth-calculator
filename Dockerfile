@@ -50,6 +50,7 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Configure Apache
 RUN a2enmod rewrite
+RUN echo "Listen 8080" > /etc/apache2/ports.conf
 COPY docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 # Set environment defaults for SQLite
