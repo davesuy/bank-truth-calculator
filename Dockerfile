@@ -36,6 +36,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 RUN npm ci --prefer-offline --no-audit
 RUN npm run build
 
+# Verify Vite build output
+RUN echo "📦 Verifying Vite build..." && \
+    ls -la public/build/ || echo "⚠️ No build directory found" && \
+    ls -la public/build/manifest.json || echo "⚠️ No manifest.json found"
+
 # Create necessary directories and set permissions
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && mkdir -p storage/logs \
@@ -52,13 +57,32 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "🔧 Setting up environment..."\n\
 \n\
+# Show diagnostic info\n\
+echo "📊 Diagnostic Information:"\n\
+echo "   Working directory: $(pwd)"\n\
+echo "   PHP version: $(php -v | head -n 1)"\n\
+echo "   Laravel version: $(php artisan --version)"\n\
+echo ""\n\
+\n\
 # Ensure storage and cache directories exist and are writable\n\
 mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache\n\
 chmod -R 777 storage bootstrap/cache\n\
+echo "   ✅ Storage directories created and writable"\n\
 \n\
 # Ensure database file exists and is writable\n\
 touch database/database.sqlite\n\
 chmod 666 database/database.sqlite\n\
+echo "   ✅ Database file created: $(ls -lh database/database.sqlite)"\n\
+\n\
+# Check if build assets exist\n\
+if [ -f "public/build/manifest.json" ]; then\n\
+    echo "   ✅ Vite manifest found: public/build/manifest.json"\n\
+else\n\
+    echo "   ⚠️  Vite manifest NOT found at public/build/manifest.json"\n\
+    echo "   Contents of public/:"\n\
+    ls -la public/\n\
+fi\n\
+echo ""\n\
 \n\
 echo "🗄️  Running migrations..."\n\
 php artisan migrate --force || { echo "❌ Migration failed!"; exit 1; }\n\
@@ -76,6 +100,14 @@ echo "⚙️  Caching configuration..."\n\
 php artisan config:cache || echo "⚠️  Config cache failed"\n\
 php artisan route:cache || echo "⚠️  Route cache failed"\n\
 php artisan view:cache || echo "⚠️  View cache failed"\n\
+\n\
+echo ""\n\
+echo "✅ Startup complete! Application ready."\n\
+echo "🌐 Test endpoints:"\n\
+echo "   - /test (basic test)"\n\
+echo "   - /health (health check)"\n\
+echo "   - /api/banks (API test)"\n\
+echo ""\n\
 \n\
 echo "🚀 Starting server on port ${PORT:-8080}..."\n\
 php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
