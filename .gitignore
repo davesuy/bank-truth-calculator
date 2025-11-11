@@ -22,3 +22,23 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Documentation files to ignore
+*FIX.md
+*DEPLOYMENT*.md
+*RENDER*.md
+*VUE3*.md
+*XML*.md
+*MONTHLY*.md
+SETUP_COMPLETE.txt
+
+# Unused deployment files
+Procfile
+nginx.conf
+render-alternative.yaml
+.renderignore
+build.sh
+start.sh
+deploy-helper.sh
+verify-deployment.sh
+
