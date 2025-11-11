@@ -45,8 +45,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
 # Create SQLite database
 RUN touch database/database.sqlite && chmod 664 database/database.sqlite
 
-# Cache Laravel configuration (but not routes/views since they may fail without DB)
-RUN php artisan config:cache
+# Don't cache config during build - do it at runtime with proper env vars
 
 # Create startup script with better error handling
 RUN echo '#!/bin/bash\n\
@@ -61,20 +60,22 @@ chmod -R 777 storage bootstrap/cache\n\
 touch database/database.sqlite\n\
 chmod 666 database/database.sqlite\n\
 \n\
-# Clear any stale cache\n\
-php artisan config:clear || true\n\
-php artisan cache:clear || true\n\
-\n\
 echo "🗄️  Running migrations..."\n\
-php artisan migrate --force || { echo "Migration failed!"; exit 1; }\n\
+php artisan migrate --force || { echo "❌ Migration failed!"; exit 1; }\n\
 \n\
 echo "🌱 Seeding database..."\n\
-php artisan db:seed --class=BankSeeder --force || echo "Seeding skipped (data may already exist)"\n\
+php artisan db:seed --class=BankSeeder --force || echo "⚠️  Seeding skipped (data may already exist)"\n\
+\n\
+echo "🧹 Clearing caches..."\n\
+php artisan config:clear || true\n\
+php artisan cache:clear || true\n\
+php artisan route:clear || true\n\
+php artisan view:clear || true\n\
 \n\
 echo "⚙️  Caching configuration..."\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
+php artisan config:cache || echo "⚠️  Config cache failed"\n\
+php artisan route:cache || echo "⚠️  Route cache failed"\n\
+php artisan view:cache || echo "⚠️  View cache failed"\n\
 \n\
 echo "🚀 Starting server on port ${PORT:-8080}..."\n\
 php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
