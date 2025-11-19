@@ -43,16 +43,20 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Number of Years
+                        Number of Years: <span class="text-blue-600 font-bold">{{ years }}</span>
                     </label>
                     <input
                         v-model.number="years"
-                        type="number"
+                        type="range"
                         min="1"
-                        max="50"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="5"
+                        max="30"
+                        step="1"
+                        class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                     />
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>1 year</span>
+                        <span>30 years</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -209,6 +213,24 @@
                     Total contributions: ${{ formatNumber(comparisonResult.total_contributions) }}
                 </p>
             </div>
+
+            <!-- Chart Visualization -->
+            <div class="mt-8 bg-gray-50 rounded-lg p-6">
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">Savings Growth Over Time</h3>
+                <div class="bg-white rounded-lg p-4">
+                    <canvas ref="chartCanvas"></canvas>
+                </div>
+                <div class="mt-4 flex justify-center gap-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-green-500 rounded"></div>
+                        <span class="text-gray-700">{{ comparisonResult.sponsored_bank.name }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-red-500 rounded"></div>
+                        <span class="text-gray-700">{{ comparisonResult.low_rate_bank.name }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Loading State -->
@@ -225,8 +247,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
+import {
+    Chart,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+
+// Register Chart.js components
+Chart.register(
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+);
 
 const sponsoredBanks = ref([]);
 const lowRateBanks = ref([]);
@@ -238,6 +285,8 @@ const years = ref(5);
 const comparisonResult = ref(null);
 const loading = ref(false);
 const error = ref(null);
+const chartCanvas = ref(null);
+let chartInstance = null;
 
 const canCompare = computed(() => {
     return selectedSponsored.value &&
@@ -252,6 +301,151 @@ const formatNumber = (value) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(value);
+};
+
+const calculateYearlyGrowth = (initialAmount, monthlyDeposit, annualRate, numYears) => {
+    const yearlyData = [];
+    let balance = initialAmount;
+    const monthlyRate = annualRate / 12 / 100;
+
+    yearlyData.push(balance);
+
+    for (let year = 1; year <= numYears; year++) {
+        for (let month = 1; month <= 12; month++) {
+            balance = balance * (1 + monthlyRate) + monthlyDeposit;
+        }
+        yearlyData.push(balance);
+    }
+
+    return yearlyData;
+};
+
+const renderChart = () => {
+    if (!chartCanvas.value || !comparisonResult.value) return;
+
+    // Destroy existing chart if it exists
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    const numYears = comparisonResult.value.years;
+    const labels = Array.from({ length: numYears + 1 }, (_, i) => `Year ${i}`);
+
+    const sponsoredData = calculateYearlyGrowth(
+        comparisonResult.value.initial_deposit,
+        comparisonResult.value.monthly_contribution,
+        comparisonResult.value.sponsored_bank.apy,
+        numYears
+    );
+
+    const lowRateData = calculateYearlyGrowth(
+        comparisonResult.value.initial_deposit,
+        comparisonResult.value.monthly_contribution,
+        comparisonResult.value.low_rate_bank.apy,
+        numYears
+    );
+
+    const ctx = chartCanvas.value.getContext('2d');
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: comparisonResult.value.sponsored_bank.name,
+                    data: sponsoredData,
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                },
+                {
+                    label: comparisonResult.value.low_rate_bank.name,
+                    data: lowRateData,
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += '$' + new Intl.NumberFormat('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(context.parsed.y);
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + new Intl.NumberFormat('en-US', {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }).format(value);
+                        },
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
 };
 
 const loadBanks = async () => {
@@ -294,6 +488,10 @@ const compareRates = async () => {
 
         comparisonResult.value = response.data;
 
+        // Render chart after DOM update
+        await nextTick();
+        renderChart();
+
         // Scroll to results
         setTimeout(() => {
             const resultsElement = document.querySelector('.bg-white.rounded-lg.shadow-xl');
@@ -321,6 +519,65 @@ onMounted(() => {
 
 .bank-card:hover {
     transform: translateY(-2px);
+}
+
+/* Custom range slider styling */
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #3b82f6;
+}
+
+.slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #3b82f6;
+}
+
+.slider::-moz-range-progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #3b82f6;
 }
 </style>
 
