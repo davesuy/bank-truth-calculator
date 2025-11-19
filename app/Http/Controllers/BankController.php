@@ -49,7 +49,7 @@ class BankController extends Controller
             'low_rate_bank_id' => 'required|exists:banks,id',
             'initial_deposit' => 'required|numeric|min:0',
             'monthly_contribution' => 'nullable|numeric|min:0',
-            'years' => 'required|integer|min:1|max:50',
+            'years' => 'required|integer|min:1|max:10',
         ]);
 
         $sponsoredBank = Bank::findOrFail($request->sponsored_bank_id);
@@ -97,15 +97,28 @@ class BankController extends Controller
     }
 
     /**
-     * Calculate compound interest
+     * Calculate compound interest with monthly compounding
+     * Formula: A = P(1 + r/12)^(12*t)
+     * Where:
+     * P = Principal
+     * r = Annual interest rate (as decimal)
+     * t = Number of years
+     *
+     * Note: Most savings accounts compound monthly, not annually
      */
     private function calculateCompoundInterest($principal, $rate, $years)
     {
         // Convert APY percentage to decimal
-        $rateDecimal = $rate / 100;
+        $annualRate = $rate / 100;
 
-        // Compound interest formula: A = P(1 + r)^t
-        $finalAmount = $principal * pow((1 + $rateDecimal), $years);
+        // Monthly interest rate
+        $monthlyRate = $annualRate / 12;
+
+        // Total number of months
+        $totalMonths = $years * 12;
+
+        // Compound interest formula with monthly compounding: A = P(1 + r/12)^(12*t)
+        $finalAmount = $principal * pow((1 + $monthlyRate), $totalMonths);
         $interestEarned = $finalAmount - $principal;
 
         return [
@@ -116,32 +129,56 @@ class BankController extends Controller
 
     /**
      * Calculate compound interest with monthly contributions
-     * Formula: FV = P(1+r)^t + PMT × [((1+r)^t - 1) / r]
+     * Uses proper monthly compounding formula
+     *
+     * Formula:
+     * FV = P(1+r)^n + PMT × [((1+r)^n - 1) / r]
+     *
      * Where:
      * P = Principal (initial deposit)
      * PMT = Monthly payment (contribution)
-     * r = Annual interest rate (as decimal)
-     * t = Number of years
+     * r = Monthly interest rate
+     * n = Total number of months
+     *
+     * This assumes:
+     * - Interest compounds monthly (12 times per year)
+     * - Monthly contributions are made at the END of each month
+     * - APY is properly converted to APR first, then to monthly rate
+     *
+     * Note: Banks advertise APY (Annual Percentage Yield) which already includes
+     * the effect of compounding. We must convert APY to APR (Annual Percentage Rate)
+     * first to get the correct monthly rate.
      */
     private function calculateCompoundInterestWithContributions($principal, $monthlyContribution, $rate, $years)
     {
         // Convert APY percentage to decimal
-        $annualRate = $rate / 100;
+        $apy = $rate / 100;
 
-        // Calculate future value of initial deposit
-        $futureValuePrincipal = $principal * pow((1 + $annualRate), $years);
+        // Convert APY to APR (Annual Percentage Rate)
+        // APY = (1 + APR/n)^n - 1, solving for APR: APR = n * ((1 + APY)^(1/n) - 1)
+        // where n = number of compounding periods per year (12 for monthly)
+        $compoundingPeriods = 12;
+        $apr = $compoundingPeriods * (pow((1 + $apy), (1 / $compoundingPeriods)) - 1);
+
+        // Monthly interest rate from APR
+        $monthlyRate = $apr / 12;
+
+        // Total number of months
+        $totalMonths = $years * 12;
+
+        // Calculate future value of initial deposit with monthly compounding
+        // FV = P * (1 + r/12)^(12*t)
+        $futureValuePrincipal = $principal * pow((1 + $monthlyRate), $totalMonths);
 
         // Calculate future value of monthly contributions
+        // FV of annuity = PMT × [((1+r)^n - 1) / r]
         $futureValueContributions = 0;
-        if ($monthlyContribution > 0) {
-            // For monthly contributions with annual compounding
-            // We need to calculate each month's contribution growing at the annual rate
-            $monthsTotal = $years * 12;
-
-            for ($month = 0; $month < $monthsTotal; $month++) {
-                $yearsRemaining = ($monthsTotal - $month) / 12;
-                $futureValueContributions += $monthlyContribution * pow((1 + $annualRate), $yearsRemaining);
-            }
+        if ($monthlyContribution > 0 && $monthlyRate > 0) {
+            $futureValueContributions = $monthlyContribution *
+                ((pow((1 + $monthlyRate), $totalMonths) - 1) / $monthlyRate);
+        } elseif ($monthlyContribution > 0 && $monthlyRate == 0) {
+            // Special case: if rate is 0%, just sum up contributions
+            $futureValueContributions = $monthlyContribution * $totalMonths;
         }
 
         $finalAmount = $futureValuePrincipal + $futureValueContributions;

@@ -49,13 +49,13 @@
                         v-model.number="years"
                         type="range"
                         min="1"
-                        max="30"
+                        max="10"
                         step="1"
                         class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                     />
                     <div class="flex justify-between text-xs text-gray-500 mt-1">
                         <span>1 year</span>
-                        <span>30 years</span>
+                        <span>10 years</span>
                     </div>
                 </div>
             </div>
@@ -216,19 +216,9 @@
 
             <!-- Chart Visualization -->
             <div class="mt-8 bg-gray-50 rounded-lg p-6">
-                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">Savings Growth Over Time</h3>
-                <div class="bg-white rounded-lg p-4">
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">Interest Earned Comparison</h3>
+                <div class="bg-white rounded-lg p-6">
                     <canvas ref="chartCanvas"></canvas>
-                </div>
-                <div class="mt-4 flex justify-center gap-6 text-sm">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 bg-green-500 rounded"></div>
-                        <span class="text-gray-700">{{ comparisonResult.sponsored_bank.name }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 bg-red-500 rounded"></div>
-                        <span class="text-gray-700">{{ comparisonResult.low_rate_bank.name }}</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -251,28 +241,24 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import {
     Chart,
-    LineController,
-    LineElement,
-    PointElement,
+    BarController,
+    BarElement,
     LinearScale,
     CategoryScale,
     Title,
     Tooltip,
-    Legend,
-    Filler
+    Legend
 } from 'chart.js';
 
 // Register Chart.js components
 Chart.register(
-    LineController,
-    LineElement,
-    PointElement,
+    BarController,
+    BarElement,
     LinearScale,
     CategoryScale,
     Title,
     Tooltip,
-    Legend,
-    Filler
+    Legend
 );
 
 const sponsoredBanks = ref([]);
@@ -303,22 +289,6 @@ const formatNumber = (value) => {
     }).format(value);
 };
 
-const calculateYearlyGrowth = (initialAmount, monthlyDeposit, annualRate, numYears) => {
-    const yearlyData = [];
-    let balance = initialAmount;
-    const monthlyRate = annualRate / 12 / 100;
-
-    yearlyData.push(balance);
-
-    for (let year = 1; year <= numYears; year++) {
-        for (let month = 1; month <= 12; month++) {
-            balance = balance * (1 + monthlyRate) + monthlyDeposit;
-        }
-        yearlyData.push(balance);
-    }
-
-    return yearlyData;
-};
 
 const renderChart = () => {
     if (!chartCanvas.value || !comparisonResult.value) return;
@@ -328,58 +298,39 @@ const renderChart = () => {
         chartInstance.destroy();
     }
 
-    const numYears = comparisonResult.value.years;
-    const labels = Array.from({ length: numYears + 1 }, (_, i) => `Year ${i}`);
+    // Use actual bank names instead of generic labels
+    const labels = [
+        comparisonResult.value.low_rate_bank.name,
+        comparisonResult.value.sponsored_bank.name
+    ];
 
-    const sponsoredData = calculateYearlyGrowth(
-        comparisonResult.value.initial_deposit,
-        comparisonResult.value.monthly_contribution,
-        comparisonResult.value.sponsored_bank.apy,
-        numYears
-    );
-
-    const lowRateData = calculateYearlyGrowth(
-        comparisonResult.value.initial_deposit,
-        comparisonResult.value.monthly_contribution,
-        comparisonResult.value.low_rate_bank.apy,
-        numYears
-    );
+    const interestEarnedLowRate = comparisonResult.value.low_rate_bank.interest_earned;
+    const interestEarnedSponsored = comparisonResult.value.sponsored_bank.interest_earned;
 
     const ctx = chartCanvas.value.getContext('2d');
 
     chartInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: comparisonResult.value.sponsored_bank.name,
-                    data: sponsoredData,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                },
-                {
-                    label: comparisonResult.value.low_rate_bank.name,
-                    data: lowRateData,
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
+                    label: 'Interest Earned',
+                    data: [interestEarnedLowRate, interestEarnedSponsored],
+                    backgroundColor: ['rgb(209, 213, 219)', 'rgb(124, 58, 237)'],
+                    borderColor: ['rgb(209, 213, 219)', 'rgb(124, 58, 237)'],
+                    borderWidth: 0,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8,
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            aspectRatio: 2,
+            aspectRatio: 2.2,
             interaction: {
                 mode: 'index',
                 intersect: false,
@@ -389,35 +340,12 @@ const renderChart = () => {
                     display: false,
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleColor: 'white',
-                    bodyColor: 'white',
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += '$' + new Intl.NumberFormat('en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }).format(context.parsed.y);
-                            return label;
-                        }
-                    }
+                    enabled: false
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: false,
+                    beginAtZero: true,
                     ticks: {
                         callback: function(value) {
                             return '$' + new Intl.NumberFormat('en-US', {
@@ -427,24 +355,69 @@ const renderChart = () => {
                         },
                         font: {
                             size: 12
-                        }
+                        },
+                        padding: 8
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false,
+                        lineWidth: 1
                     }
                 },
                 x: {
                     ticks: {
-                        font: {
-                            size: 12
-                        }
+                        display: false  // Hide default x-axis labels to prevent overlap
                     },
                     grid: {
-                        display: false
+                        display: false,
+                        drawBorder: false
                     }
                 }
+            },
+            layout: {
+                padding: {
+                    top: 30,
+                    bottom: 60
+                }
             }
-        }
+        },
+        plugins: [{
+            id: 'customLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea } = chart;
+                const meta = chart.getDatasetMeta(0);
+
+                meta.data.forEach((bar, index) => {
+                    const value = chart.data.datasets[0].data[index];
+                    const bankName = chart.data.labels[index];
+                    const formattedValue = '$' + new Intl.NumberFormat('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    }).format(value);
+
+                    ctx.save();
+
+                    // Draw the dollar value above the bar
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillStyle = index === 0 ? '#6B7280' : '#7C3AED';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(formattedValue, bar.x, bar.y - 15);
+
+                    // Draw bank name below the chart
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.fillStyle = '#374151';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(bankName, bar.x, chartArea.bottom + 25);
+
+                    // Draw "Interest Earned" label below bank name
+                    ctx.font = '12px sans-serif';
+                    ctx.fillStyle = '#6B7280';
+                    ctx.fillText('Interest Earned', bar.x, chartArea.bottom + 45);
+
+                    ctx.restore();
+                });
+            }
+        }]
     });
 };
 
