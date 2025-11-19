@@ -14,15 +14,17 @@ A Laravel-based web application that helps users calculate and compare the real 
 
 - 💵 **Interactive Savings Calculator** - Calculate opportunity cost over time
 - 🏦 **Bank Comparison Tool** - Compare sponsored high-yield accounts vs traditional banks
-- 📊 **Real-time Calculations** - See how much money you're losing monthly/yearly
+- 📊 **Visual Chart Display** - Interactive line chart showing savings growth over time
+- 🎚️ **Year Slider** - Easy-to-use slider for selecting timeframe (1-30 years)
+- 📈 **Real-time Calculations** - See how much money you're losing monthly/yearly
 - 🎯 **Monthly Contribution Support** - Factor in regular deposits
 - 📱 **Responsive Design** - Works on desktop and mobile
-- ⚡ **Fast & Modern** - Built with Laravel 12 + Vue 3 + Vite
+- ⚡ **Fast & Modern** - Built with Laravel 12 + Vue 3 + Vite + Chart.js
 
 ## Tech Stack
 
 - **Backend**: Laravel 12.0, PHP 8.2
-- **Frontend**: Vue 3, Vite
+- **Frontend**: Vue 3, Vite, Chart.js
 - **Database**: SQLite
 - **Server**: Apache (via Docker)
 - **Deployment**: Render (Docker)
